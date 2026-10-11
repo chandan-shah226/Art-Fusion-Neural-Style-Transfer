@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description"
+    content="Art Fusion — a neural style transfer application using Adaptive Instance Normalisation (AdaIN). Upload a content image and a style reference to generate a stylized output.">
+  <title>Art Fusion — Neural Style Transfer</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link
+    href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=Inter:wght@400;500;600&display=swap"
+    rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
+    crossorigin="anonymous" referrerpolicy="no-referrer">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+
+<body>
+
+  <!-- ===== Header ===== -->
+  <header class="site-header">
+    <div class="container">
+      <div class="header-inner">
+
+        <div class="header-brand">
+          <div class="brand-mark" aria-hidden="true">
+            <svg viewBox="0 0 16 16" xmlns="http://www.w3.org/2000/svg">
+              <path d="M8 1L14 4.5V11.5L8 15L2 11.5V4.5L8 1Z" />
+            </svg>
+          </div>
+          <div>
+            <h1 class="brand-name">Art Fusion</h1>
+            <span class="brand-subtitle">Neural Style Transfer · AdaIN</span>
+          </div>
+        </div>
+
+
+      </div>
+    </div>
+    <hr class="header-divider">
+  </header>
+
+  <!-- ===== Main Workspace ===== -->
+  <main class="workspace">
+    <div class="container">
+
+      <form method="post" enctype="multipart/form-data" id="styleForm" novalidate>
+        {{ form.hidden_tag() }}
+        {{ form.content_path() }}
+        {{ form.style_path() }}
+
+        <!-- Hidden file inputs (triggered by drop zones) -->
+        {{ form.content(class="hidden-file-input", id="contentInput", accept=".png,.jpg,.jpeg", style="display: none;") }}
+
+        <!-- ── Upload Row ── -->
+        <div class="upload-grid">
+
+          <!-- Content Image -->
+          <div class="upload-panel">
+            <div class="panel-header">
+              <span class="panel-label">Content Image</span>
+              <span class="panel-hint">The image whose structure is preserved</span>
+            </div>
+            <div class="drop-zone" id="contentDrop" tabindex="0" role="button"
+              aria-label="Upload content image — click or drag and drop">
+              {% if content_image %}
+              <div class="drop-preview">
+                <img class="preview-img" src="{{ url_for('send_image', filename=content_image) }}"
+                  alt="Content image preview">
+                <div class="preview-meta">
+                  <span class="preview-filename">{{ content_image }}</span>
+                  <button type="button" class="preview-change">Change</button>
+                </div>
+              </div>
+              {% else %}
+              <div class="drop-idle" id="contentIdle">
+                <i class="fas fa-image drop-icon" aria-hidden="true"></i>
+                <p class="drop-title">Drop image here or <span class="drop-browse">browse</span></p>
+                <p class="drop-formats">PNG &middot; JPG &middot; JPEG</p>
+              </div>
+              {% endif %}
+            </div>
+          </div>
+
+          <!-- Style Reference -->
+          <div class="upload-panel">
+            <div class="panel-header">
+              <span class="panel-label">Style Reference</span>
+              <span class="panel-hint">Select a visual style to apply</span>
+            </div>
+            <div class="style-preset-grid" id="stylePresetGrid">
+              {% set preset_styles = [
+              ('antimonocromatismo.jpg', 'Antimonocromatismo'),
+              ('brushstrokes.jpg', 'Brushstrokes'),
+              ('contrast_of_forms.jpg', 'Contrast of Forms'),
+              ('en_campo_gris.jpg', 'En Campo Gris'),
+              ('flower_of_life.jpg', 'Flower of Life'),
+              ('goeritz.jpg', 'Goeritz'),
+              ('impronte_d_artista.jpg', 'Impronte'),
+              ('la_muse.jpg', 'La Muse'),
+              ('mondrian.jpg', 'Mondrian'),
+              ('picasso_seated_nude_hr.jpg', 'Picasso'),
+              ('picasso_self_portrait.jpg', 'Picasso Portrait'),
+              ('scene_de_rue.jpg', 'Scene de Rue'),
+              ('the_resevoir_at_poitiers.jpg', 'Poitiers'),
+              ('trial.jpg', 'Trial'),
+              ('woman_in_peasant_dress_cropped.jpg', 'Peasant Dress'),
+              ('woman_with_hat_matisse.jpg', 'Matisse')
+              ] %}
+              {% for fname, label in preset_styles %}
+              <div class="style-preset-item {% if style_image == fname %}selected{% endif %}" data-style="{{ fname }}"
+                tabindex="0" role="button" aria-label="Select {{ label }} style">
+                <img src="{{ url_for('send_example', filename=fname) }}" alt="{{ label }} style">
+                <span class="preset-label">{{ label }}</span>
+              </div>
+              {% endfor %}
+            </div>
+          </div>
+
+        </div><!-- /.upload-grid -->
+
+    <!-- ── Transfer Settings ── -->
+    <div class="settings-panel">
+      <div class="settings-inner">
+
+        <div class="alpha-control">
+          <label for="alphaRange" class="control-label">Transfer Strength (&alpha;)</label>
+          <div class="slider-row">
+            <span class="slider-bound">0.0</span>
+            {{ form.alpha(id="alphaRange", type="range", min="0", max="1", step="0.05") }}
+            <span class="slider-bound">1.0</span>
+            <span class="alpha-value" id="alphaDisplay" aria-live="polite">1.0</span>
+          </div>
+          <p class="control-hint">
+            Higher values apply more of the style reference. Lower values preserve more content detail.
+          </p>
+        </div>
+
+        <div>
+          {{ form.submit(class="btn-generate", id="generateBtn") }}
+        </div>
+
+      </div>
+    </div><!-- /.settings-panel -->
+
+    </form>
+
+    <!-- ── Server-side Error ── -->
+    {% if error %}
+    <div class="alert alert-error" role="alert">
+      <i class="fas fa-exclamation-circle" aria-hidden="true"></i>
+      <span>{{ error }}</span>
+    </div>
+    {% endif %}
+
+    <!-- ── Generated Output ── -->
+    {% if result_image %}
+    <section class="result-section" id="resultSection" aria-labelledby="resultHeading">
+      <div class="section-header">
+        <h2 id="resultHeading">Generated Output</h2>
+      </div>
+      <div class="result-panel">
+        <img src="{{ url_for('send_image', filename=result_image) }}" class="result-img" alt="Stylized output image">
+        <div class="result-actions">
+          <a href="{{ url_for('send_image', filename=result_image) }}" download class="btn-download">
+            <i class="fas fa-download" aria-hidden="true"></i>
+            Download
+          </a>
+        </div>
+      </div>
+    </section>
+    {% endif %}
+
+    </div><!-- /.container -->
+  </main>
+
+  <!-- ===== Footer ===== -->
+  <footer class="site-footer">
+    <div class="container"></div>
+  </footer>
+
+  <!-- ===== Loading Overlay ===== -->
+  <div class="loading-overlay" id="loadingOverlay" aria-label="Generating stylized image" aria-live="polite">
+    <div class="loading-card">
+      <div class="spinner" role="status" aria-label="Processing"></div>
+      <p class="loading-step" id="loadingStep">Processing image&hellip;</p>
+    </div>
+  </div>
+
+  <script src="{{ url_for('static', filename='js/app.js') }}"></script>
+</body>
+
+</html>
