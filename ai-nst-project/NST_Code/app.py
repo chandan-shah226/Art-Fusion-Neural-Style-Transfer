@@ -12,6 +12,7 @@ from torchvision import transforms
 import io
 import numpy as np
 import easyocr
+from huggingface_hub import hf_hub_download
 
 from utils.models import VGGEncoder, Decoder
 from utils.utils import adaptive_instance_normalization, calc_mean_std
