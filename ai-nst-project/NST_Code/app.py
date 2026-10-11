@@ -37,7 +37,6 @@ class UploadForm(FlaskForm):
 
 
 # ── Model loading ──────────────────────────────────────────────────────────────
-# Model loading
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 _base_dir = os.path.dirname(os.path.abspath(__file__))
 
@@ -82,7 +81,6 @@ decoder.eval()
 
 # Keep your existing OCR initialization below
 ocr_reader = easyocr.Reader(['en'], gpu=(device.type == 'cuda'))
-
 
 # ── Helpers ────────────────────────────────────────────────────────────────────
 def allowed_file(filename):
