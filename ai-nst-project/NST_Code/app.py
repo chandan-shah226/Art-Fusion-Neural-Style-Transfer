@@ -41,35 +41,13 @@ device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
 
 _base_dir = os.path.dirname(os.path.abspath(__file__))
-
-from huggingface_hub import hf_hub_download
-
-_model_repo = os.environ.get(
-    "HF_MODEL_REPO", "Chandan226/art-fusion-models"
+_vgg_path  = os.environ.get(
+    'VGG_PATH',
+    os.path.join(_base_dir, 'vgg_normalised.pth')
 )
-_hf_token = os.environ.get("HF_TOKEN")
-
-_local_vgg = os.path.join(_base_dir, "vgg_normalised.pth")
-_local_decoder = os.path.join(
-    _base_dir, "experiment", "final_exp", "decoder_final.pth"
-)
-
-_vgg_path = (
-    _local_vgg if os.path.exists(_local_vgg)
-    else hf_hub_download(
-        repo_id=_model_repo,
-        filename="vgg_normalised.pth",
-        token=_hf_token
-    )
-)
-
-_decoder_path = (
-    _local_decoder if os.path.exists(_local_decoder)
-    else hf_hub_download(
-        repo_id=_model_repo,
-        filename="decoder_final.pth",
-        token=_hf_token
-    )
+_decoder_path = os.environ.get(
+    'DECODER_PATH',
+    os.path.join(_base_dir, 'experiment', 'final_exp', 'decoder_final.pth')
 )
 print("DEBUG: HF_MODEL_REPO =", _model_repo)
 print("DEBUG: VGG path =", _vgg_path)
