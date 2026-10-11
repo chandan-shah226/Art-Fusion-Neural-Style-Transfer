@@ -1,4 +1,4 @@
-# CanvasFlow — Neural Style Transfer
+# Art-Fusion—Neural Style Transfer
 
 A neural style transfer web application built using **Adaptive Instance Normalisation (AdaIN)**, implemented from scratch in PyTorch with a Flask front-end.
 
